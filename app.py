@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import altair as alt
+import os
 
 from darts import TimeSeries
 from darts.models import NBEATSModel
@@ -12,9 +13,8 @@ from darts.models import DLinearModel
 
 from darts.utils.model_selection import train_test_split
 from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
-from darts.metrics import mape, r2_score
-from darts.metrics import mae
-from darts.datasets import EnergyDataset
+from darts.metrics import r2_score
+
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -38,7 +38,6 @@ def main():
             dataframe(file)
 
 
-
 def dataframe(file):
     st.header('Diamond Price Forecaster')
 
@@ -50,8 +49,7 @@ def dataframe(file):
     period = st.number_input('Enter the next period(s) you want to forecast', value=7, help="Keep in mind that forecasts become less accurate with larger forecast horizons.")
     button = st.button('Forecast')
     if button:
-        # pred_df = model_forecast(series, period)
-        pred_df = model_forecast(series, period, weights="./model/dlinear.pt")
+        pred_df = model_forecast(series, period)
 
         df['date'] = pd.to_datetime(df['date'])
         df.set_index(df.columns[0], inplace=True)
@@ -144,11 +142,11 @@ def plot_chart(data, color=None):
     return (line + points + tooltips).interactive()
 
 
-def model_forecast(series, period, weights=None):
+def model_forecast(series, period):
     # Split train, val
     train, val = train_test_split(series, test_size=0.2)
 
-    if weights:
+    if os.path.exists('./model/dlinear.pt'):
         print('Loading weights...')
         model = DLinearModel.load(weights)
     else:
