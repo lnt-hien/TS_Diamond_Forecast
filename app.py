@@ -6,14 +6,10 @@ import altair as alt
 import os
 
 from darts import TimeSeries
-from darts.models import NBEATSModel
-from darts.models import NHiTSModel
-from darts.models import NLinearModel
 from darts.models import DLinearModel
 
 from darts.utils.model_selection import train_test_split
-from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
-from darts.metrics import r2_score
+from darts.dataprocessing.transformers import MissingValuesFiller
 
 
 import warnings
@@ -27,15 +23,18 @@ def main():
     st.sidebar.header('Diamond Price Forecaster')
     st.sidebar.info("Make sure your data is a time series data \
                      containing two columns date & price.")
-    option = st.sidebar.selectbox('How do you want to get the data?', ['File', 'URL'])
-    if option == 'URL':
-        url = st.sidebar.text_input('Enter a URL')
-        if url:
-            dataframe(url)
-    else:
-        file = st.sidebar.file_uploader('Choose a file', type=['csv', 'txt'])
-        if file:
-            dataframe(file)
+    file = st.sidebar.file_uploader('Choose a file', type=['csv', 'txt'])
+    if file:
+        dataframe(file)
+    # option = st.sidebar.selectbox('How do you want to get the data?', ['File', 'URL'])
+    # if option == 'URL':
+    #     url = st.sidebar.text_input('Enter a URL')
+    #     if url:
+    #         dataframe(url)
+    # else:
+    #     file = st.sidebar.file_uploader('Choose a file', type=['csv', 'txt'])
+    #     if file:
+    #         dataframe(file)
 
 
 def dataframe(file):
@@ -145,33 +144,36 @@ def plot_chart(data, color=None):
 def model_forecast(series, period):
     # Split train, val
     train, val = train_test_split(series, test_size=0.2)
-
-    if os.path.exists('./model/dlinear.pt'):
-        print('Loading weights...')
-        model = DLinearModel.load(weights)
+    weights_path = './model/dlinear.pt'
+    if os.path.exists(weights_path):
+        with st.spinner('Loading weights...'):
+            model = DLinearModel.load(weights_path)
+        st.success('Done!')
     else:
-        print('Loading model...')
-        model = DLinearModel(
-            input_chunk_length=30, 
-            output_chunk_length=period,
-            n_epochs=100,
-            nr_epochs_val_period=1,
-            batch_size=500,
-        )
-        
-        model.to_cpu()
-        
-        model.fit(series=train, val_series=val, verbose=False)
-        model.save('./model/dlinear.pt')
+        with st.spinner('Loading and fitting model...'):
+            model = DLinearModel(
+                input_chunk_length=30, 
+                output_chunk_length=period,
+                n_epochs=100,
+                nr_epochs_val_period=1,
+                batch_size=500,
+            )
+            
+            model.to_cpu()
+            
+            model.fit(series=train, val_series=val, verbose=False)
+            model.save(weights_path)
+        st.success('Done!')
 
-    dlinear_pred_series = model.historical_forecasts(
-        series,
-        start=series.time_index[0],
-        forecast_horizon=period,
-        stride=5,
-        retrain=False,
-        verbose=False,
-    )
+    with st.spinner('Forecasting...'):
+        dlinear_pred_series = model.historical_forecasts(
+            series,
+            start=series.time_index[0],
+            forecast_horizon=period,
+            stride=5,
+            retrain=False,
+            verbose=False,
+        )
     
     # display_forecast(dlinear_pred_series, series, period, start_date=val[0].time_index[0])
     # display_forecast(dlinear_pred_series, series, period)
@@ -181,6 +183,7 @@ def model_forecast(series, period):
     pred_df.rename({'time': 'date', 'price': 'pred_price'}, axis=1, inplace=True)
     pred_df.set_index(pred_df.columns[0], inplace=True)
     
+    
     # predict
     st.text(f"Prediction for {period} period(s) onward:")
     future_pred_df = model.predict(n=period).pd_dataframe()
@@ -189,19 +192,6 @@ def model_forecast(series, period):
     
     return pred_df
 
-
-def display_forecast(pred_series, series, periods, start_date=None):
-    fig = plt.figure(figsize=(8, 5))
-
-    if start_date:
-        series = series.drop_before(start_date)
-
-    series.univariate_component(0).plot(label="actual")
-    pred_series.plot(label=("historic " + str(periods) + " days forecasts"))
-
-    plt.title(f"R2: {r2_score(series.univariate_component(0), pred_series)}")
-    plt.legend()
-    st.pyplot(fig)
 
 if __name__ == '__main__':
     main()
