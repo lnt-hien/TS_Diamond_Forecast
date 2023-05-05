@@ -16,7 +16,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 st.set_page_config(
-    page_title="Diamond Price Forecaster", page_icon="💎"
+    page_title="Diamond Price Forecaster", 
+    page_icon="💎"
 )
 
 def main():
@@ -144,7 +145,7 @@ def plot_chart(data, color=None):
 def model_forecast(series, period):
     # Split train, val
     train, val = train_test_split(series, test_size=0.2)
-    weights_path = './model/dlinear.pt'
+    weights_path = './model/timeseries/dlinear.pt'
     if os.path.exists(weights_path):
         with st.spinner('Loading weights...'):
             model = DLinearModel.load(weights_path)
