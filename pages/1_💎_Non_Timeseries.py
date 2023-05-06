@@ -11,10 +11,7 @@ st.set_page_config(
 #Caching the model for faster loading
 @st.cache_resource
 
-
-# Define the prediction function
-def predict(carat, cut, color, clarity, depth, table, x, y, z):
-    #Predicting the price of the carat
+def get_input(carat, cut, color, clarity, depth, table, x, y, z):
     if cut == 'Fair':
         cut = 0
     elif cut == 'Good':
@@ -59,8 +56,8 @@ def predict(carat, cut, color, clarity, depth, table, x, y, z):
         clarity = 7
     
 
-    prediction = model.predict(pd.DataFrame([[carat, cut, color, clarity, depth, table, x, y, z]], columns=['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z']))
-    return prediction
+    inputs = pd.DataFrame([[carat, cut, color, clarity, depth, table, x, y, z]], columns=['carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z'])
+    return inputs
 
 def autoplay_audio(file_path: str):
     with open(file_path, "rb") as f:
@@ -136,8 +133,9 @@ def main():
         model = xgb.XGBRegressor()
         model.load_model("./model/non_timeseries/xgb_model.bin")
 
-        price = predict(carat, cut, color, clarity, depth, table, x, y, z)
-        st.success(f'Predicted diamond price: ${price[0]:.2f} USD')
+        inputs = get_input(carat, cut, color, clarity, depth, table, x, y, z)
+        pred = model.predict(inputs)
+        st.success(f'Predicted diamond price: ${pred[0]:.2f} USD')
 
 if __name__ == '__main__':
     main()
