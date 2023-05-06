@@ -118,11 +118,7 @@ def main():
     autoplay_audio("./media/audio/FKJ - Ylang Ylang_EfgAd6iHApE.mp3")
     st.snow()
     st.title('💎DIAMOND FORTUNE TELLER💎')
-<<<<<<< HEAD
     st.image('./media/images/Thantai.jpeg', width=100)
-=======
-    st.image('./media/images/Thantai.jpeg', use_column_width=True)
->>>>>>> 1e25149868f8d9549dc6c3b128ea1f7f28c04b55
     st.header('Input the diamond\'s information in the fields below.')
     st.image('./media/images/dia_dim.png')
     carat = st.number_input('Carat Weight:', min_value=0.1, max_value=10.0, value=1.0, help=tooltip_txt['carat'])
